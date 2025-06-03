@@ -8,7 +8,8 @@ export const DIRECTION_KEY = {
     up: 38,
     left: 37,
     down: 40,
-    right: 39
+    right: 39,
+    space: 32
 } as const;
 export type PLAYER_MOVE_KEY = typeof DIRECTION_KEY.a | typeof DIRECTION_KEY.left | typeof DIRECTION_KEY.d | typeof DIRECTION_KEY.right;
 export type SHOOT_CORNER_CHANGE_KEY = typeof DIRECTION_KEY.w | typeof DIRECTION_KEY.up | typeof DIRECTION_KEY.s | typeof DIRECTION_KEY.down;
