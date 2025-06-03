@@ -8,7 +8,7 @@ import {
 } from 'cc';
 const { ccclass } = _decorator;
 
-import type { PLAYER_MOVE_KEY } from './Type';
+import { isPlayerMoveKey, isShootCornerChangeKey } from './Type';
 
 /**
  * 存储所有按下的按键，供其他 Controller 获取
@@ -33,9 +33,12 @@ export class KeyController extends Component {
         this.pressingDirectionKey.push(keyCode);
 
         director.emit('last-key-update', keyCode);
-        // if (keyCode instanceof PLAYER_MOVE_KEY) {
-
-        // }
+        if (isPlayerMoveKey(keyCode)) {
+            director.emit('player-move-change', keyCode);
+        }
+        if (isShootCornerChangeKey(keyCode)) {
+            director.emit('shoot-corner-change', keyCode);
+        }
     }
 
     onKeyUp(event: EventKeyboard) {
@@ -45,6 +48,26 @@ export class KeyController extends Component {
             director.emit('last-key-update', this.pressingDirectionKey.slice(-1)[0]);
         } else {
             director.emit('last-key-update', 0);
+        }
+        // 松开的是方向键
+        if (isPlayerMoveKey(keyCode)) {
+            // 取最后一个方向键
+            const lastMoveKey = this.pressingDirectionKey.reverse().find((item) => isPlayerMoveKey(item));
+            if (lastMoveKey) {
+                director.emit('player-move-change', lastMoveKey);
+            } else {
+                director.emit('player-move-change', 0);
+            }
+        }
+        // 松开的是调节角度键
+        if (isShootCornerChangeKey(keyCode)) {
+            // 取最后一个方向键
+            const lastChangeCornerKey = this.pressingDirectionKey.reverse().find((item) => isShootCornerChangeKey(item));
+            if (lastChangeCornerKey) {
+                director.emit('shoot-corner-change', lastChangeCornerKey);
+            } else {
+                director.emit('shoot-corner-change', 0);
+            }
         }
     }
 
