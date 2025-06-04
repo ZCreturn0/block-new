@@ -24,9 +24,9 @@ export class BallController extends Component {
     // 球初始速度
     private initSpeed: number = 300;
     // 同向减小的角度
-    private reduceAngle: number = 10;
+    private reduceAngle: number = 20;
     // 反向增加的角度
-    private increaseAngle: number = 10;
+    private increaseAngle: number = 20;
     // 固定反射最小角度
     private minReflectAngle: number = 10;
 
@@ -45,6 +45,7 @@ export class BallController extends Component {
         director.on('shooting-press', this.onShootingPress.bind(this));
         director.on('ball-wall-contacting', this.onBallWallContacting.bind(this));
         director.on('ball-player-contacting', this.onBallPlayerContacting.bind(this));
+        director.on('ball-block-contacting', this.onBallBlockContacting.bind(this));
     }
 
     onPlayerMove({ direction, speed }: PLAYER_MOVE_TYPE) {
@@ -157,6 +158,110 @@ export class BallController extends Component {
             if (180 - target.direction < this.minReflectAngle) {
                 target.direction = 180 - this.minReflectAngle;
             }
+        }
+    }
+
+    onBallBlockContacting(e) {
+        const { blockPos, ballName, blockSize } = e;
+        blockPos.xMin = blockPos.x - blockSize.w / 2;
+        blockPos.xMax = blockPos.x + blockSize.w / 2;
+        blockPos.yMin = blockPos.y - blockSize.h / 2;
+        blockPos.yMax = blockPos.y + blockSize.h / 2;
+        const target = this.balls.find((item) => item.node.name = ballName);
+        if (target) {
+            // 修改角度
+            // 球半径
+            const radius = (target.node as any).width / 2;
+            // 半径投影长度
+            const radiusCos = Math.abs(Math.cos(45) * radius);
+            // 正上
+            if (target.direction === 90) {
+                if (target.node.x < blockPos.x) {
+                    target.direction += 180;
+                }
+            }
+            // 正右
+            else if (target.direction === 0) {
+                if (target.node.y < blockPos.y) {
+                    target.direction += 180;
+                }
+            }
+            // 正下
+            else if (target.direction === 270) {
+                if (target.node.x > blockPos.x) {
+                    target.direction -= 180;
+                }
+            }
+            // 正左
+            else if (target.direction === 180) {
+                if (target.node.y > blockPos.y) {
+                    target.direction -= 180;
+                }
+            }
+            // 往右上运动
+            else if (target.direction> 0 && target.direction < 90) {
+                // 判断下左面
+                // 左侧
+                if (target.node.x + radiusCos <= blockPos.xMin || 
+                    (
+                        target.node.x <= blockPos.xMin &&
+                        (target.node.y - blockPos.yMax < radiusCos || blockPos.yMin - target.node.y < radiusCos)
+                    )) {
+                    target.direction = 90 - target.direction + 90;
+                } else {
+                    target.direction = 360 - target.direction;
+                }
+            }
+            // 左上
+            else if (target.direction> 90 && target.direction < 180) {
+                // 判断下右面
+                // 右侧
+                if (target.node.x + radiusCos >= blockPos.xMax || 
+                    (
+                        target.node.x >= blockPos.xMax &&
+                        (target.node.y - blockPos.yMax < radiusCos || blockPos.yMin - target.node.y < radiusCos)
+                    )) {
+                    target.direction = 90 - target.direction + 90;
+                } else {
+                    target.direction = 180 - target.direction + 180;
+                }
+            }
+            // 左下
+            else if (target.direction> 180 && target.direction < 270) {
+                // 判断上右面
+                // 右侧
+                if (target.node.x + radiusCos >= blockPos.xMax || 
+                    (
+                        target.node.x >= blockPos.xMax &&
+                        (target.node.y - blockPos.yMax < radiusCos || blockPos.yMin - target.node.y < radiusCos)
+                    )) {
+                    target.direction = (180 - target.direction + 360) % 360;
+                } else {
+                    target.direction = 360 - target.direction;
+                }
+            }
+            // 右下
+            else if (target.direction> 270 && target.direction < 360) {
+                // 判断左上面
+                // 左侧
+                if (target.node.x + radiusCos <= blockPos.xMin || 
+                    (
+                        target.node.x <= blockPos.xMin &&
+                        (target.node.y - blockPos.yMax < radiusCos || blockPos.yMin - target.node.y < radiusCos)
+                    )) {
+                    target.direction = 180 + (360 - target.direction);
+                } else {
+                    target.direction = 360 - target.direction;
+                }
+            }
+            // 事件通知
+            director.emit('ball-damage', {
+                blockPos,
+                ball: {
+                    attack: target.attack,
+                    type: target.type
+                }
+            });
         }
     }
 

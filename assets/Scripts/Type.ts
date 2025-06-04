@@ -37,18 +37,21 @@ export const DIRECTION_TYPE = {
 export type PLAYER_MOVE_KEY = typeof DIRECTION_KEY.a | typeof DIRECTION_KEY.left | typeof DIRECTION_KEY.d | typeof DIRECTION_KEY.right;
 export type SHOOT_CORNER_CHANGE_KEY = typeof DIRECTION_KEY.w | typeof DIRECTION_KEY.up | typeof DIRECTION_KEY.s | typeof DIRECTION_KEY.down;
 export type PLAYER_DIRECTION_KEY = typeof DIRECTION_TYPE.STOP | typeof DIRECTION_TYPE.LEFT | typeof DIRECTION_TYPE.RIGHT;
-// todo: 增加更多类型
+
 export const BALL = {
-    NORMAL: 0,
-    FIRE: 1
+    NORMAL: 1,
+    FIRE: 2,
+    WIND: 3,
+    COLORFUL: 4
 };
+export type BALL_TYPE = typeof BALL[keyof typeof BALL];
 export type Ball = {
     // 是否发射
     onShoot: boolean;
     // 球的速度
     speed: number;
     // 类型
-    type: typeof BALL[keyof typeof BALL];
+    type: BALL_TYPE;
     // 攻击力
     attack: number;
     // 球的方向(0 - 360度)
@@ -79,3 +82,24 @@ export interface PLAYER_MOVE_TYPE {
     direction: PLAYER_MOVE_KEY;
     speed: number;
 }
+
+export const BLOCK = {
+    EMPTY: 0,
+    NORMAL: 1,
+    GRASS: 2,
+    WOOD: 3,
+    GOLD: 4,
+    DIAMOND: 5
+};
+export type BLOCK_TYPE = typeof BLOCK[keyof typeof BLOCK];
+
+export interface SIZE {
+    w: number;
+    h: number;
+};
+export interface BLOCK_NODE {
+    hp: number;
+    type: BLOCK_TYPE;
+    node: Node;
+}
+export const blockType: Array<string> = ['NormalBlock<BoxCollider2D>', 'WoodBlock<BoxCollider2D>', 'GrassBlock<BoxCollider2D>', 'GoldBlock<BoxCollider2D>', 'DiamandBlock<BoxCollider2D>'];
