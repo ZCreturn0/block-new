@@ -24,6 +24,7 @@ export class PlayerController extends Component {
         director.on('leave-wall', () => {
             this.cantactingWall = null;
         });
+        this.curPos = this.node.position;
     }
 
     move() {

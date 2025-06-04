@@ -8,7 +8,7 @@ import {
 } from 'cc';
 const { ccclass } = _decorator;
 
-import { isPlayerMoveKey, isShootCornerChangeKey } from './Type';
+import { isPlayerMoveKey, isShootCornerChangeKey, isSpace } from './Type';
 
 /**
  * 存储所有按下的按键，供其他 Controller 获取
@@ -38,6 +38,9 @@ export class KeyController extends Component {
         }
         if (isShootCornerChangeKey(keyCode)) {
             director.emit('shoot-corner-change', keyCode);
+        }
+        if (isSpace(keyCode)) {
+            director.emit('shooting-press', keyCode);
         }
     }
 
