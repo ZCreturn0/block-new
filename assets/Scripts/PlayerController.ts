@@ -1,11 +1,11 @@
 import { _decorator, Component, Node, director, Vec3, log } from 'cc';
 const { ccclass, property } = _decorator;
 import type { PLAYER_MOVE_KEY } from './Type';
-import { DIRECTION_KEY } from './Type';
+import { DIRECTION_KEY, isPlayerMoveKey } from './Type';
 
 @ccclass('PlayerController')
 export class PlayerController extends Component {
-    // 玩家运动方向
+    // 玩家运动方向键
     private direction: PLAYER_MOVE_KEY | 0 = 0;
     // 移动速度
     private speed: number = 10;
@@ -17,6 +17,12 @@ export class PlayerController extends Component {
     start() {
         director.on('player-move-change', (keyCode: PLAYER_MOVE_KEY) => {
             this.direction = keyCode;
+            if (!isPlayerMoveKey(keyCode)) {
+                director.emit('player-move', {
+                    direction: 0,
+                    speed: 0
+                });
+            }
         });
         director.on('contact-wall', (wall: 'LeftWall' | 'TopWall' | 'RightWall') => {
             this.cantactingWall = wall;

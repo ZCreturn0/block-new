@@ -1,7 +1,7 @@
 import { _decorator, Component, Node, Prefab, instantiate, Vec3, director } from 'cc';
 const { ccclass, property } = _decorator;
 
-import type { SIZE, BLOCK_NODE, BLOCK_TYPE, BALL_TYPE } from './Type';
+import type { SIZE, BLOCK_NODE, BLOCK_TYPE, BALL_TYPE, POS } from './Type';
 import { BLOCK, BALL } from './Type';
 
 @ccclass('BlockCtroller')
@@ -37,8 +37,14 @@ export class BlockCtroller extends Component {
     // 砖块缩放比例
     private blockScale: number = 0.02;
 
+    // 存储上一次碰撞的坐标
+    public lastContactingPos: POS = {
+        x: -1,
+        y: -1
+    };
+
     // 地图
-    private map: Array<Array<number>> = [
+    public map: Array<Array<number>> = [
         [BLOCK.NORMAL, BLOCK.EMPTY, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.EMPTY, BLOCK.EMPTY],
         [BLOCK.GOLD, BLOCK.GOLD, BLOCK.GOLD, BLOCK.GOLD, BLOCK.GOLD, BLOCK.GOLD, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND],
         [BLOCK.EMPTY, BLOCK.EMPTY, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.EMPTY, BLOCK.EMPTY, BLOCK.EMPTY, BLOCK.EMPTY, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.EMPTY, BLOCK.NORMAL],
@@ -127,29 +133,58 @@ export class BlockCtroller extends Component {
         });
     }
 
-    onBallDamage(e) {
-        const { blockPos, ball } = e;
+    // 通过x,y坐标获取砖块在mapNodes下的索引
+    getPosByXy(x: number, y: number) {
         const pos = {
             x: 0,
             y: 0
         };
-        // 找到在数组中的索引
         this.mapNodes.forEach((item, _i) => {
             item.forEach((_item, _j) => {
-                if (_item.node && _item.node.x === blockPos.x && _item.node.y === blockPos.y) {
+                if (_item.node && _item.node.x === x && _item.node.y === y) {
                     pos.x = _i;
                     pos.y = _j;
                 }
             });
         });
+        return pos;
+    }
+
+    setSchedule() {
+        this.scheduleOnce(this.setLastContactingPos, 0.1);
+    }
+
+    cancelSchedule() {
+        this.unschedule(this.setLastContactingPos);
+    }
+
+    setLastContactingPos() {
+        this.lastContactingPos.x = -1;
+        this.lastContactingPos.y = -1;
+    }
+
+    onBallDamage(e) {
+        const { blockPos, ball } = e;
+        const pos = this.getPosByXy(blockPos.x, blockPos.y);
         const target = this.mapNodes[pos.x][pos.y];
+        /**
+         * 防重复碰撞，短时间内与上一次碰撞在同一行或同一列则视为无效
+         */
+        if (pos.x === this.lastContactingPos.x || pos.y === this.lastContactingPos.y) {
+            return;
+        }
         if (target && target.hp) {
+            this.cancelSchedule();
             const damage = this.getDamage(target.type, ball.type);
             target.hp -= damage;
             if (target.hp <= 0) {
                 this.node.removeChild(target.node);
+                target.node.destroy();
                 this.mapNodes[pos.x][pos.y].node = null;
                 this.map[pos.x][pos.y] = BLOCK.EMPTY;
+                this.lastContactingPos.x = pos.x;
+                this.lastContactingPos.y = pos.y;
+                this.setSchedule();
             }
         }
     }

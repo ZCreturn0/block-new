@@ -42,6 +42,13 @@ export class KeyController extends Component {
         if (isSpace(keyCode)) {
             director.emit('shooting-press', keyCode);
         }
+        // debug
+        if (keyCode === 90) {
+            director.emit('speed-up');
+        }
+        if (keyCode === 67) {
+            director.emit('speed-down');
+        }
     }
 
     onKeyUp(event: EventKeyboard) {

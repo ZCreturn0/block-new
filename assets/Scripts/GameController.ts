@@ -41,11 +41,11 @@ export class GameController extends Component {
             });
         }
         // 玩家和墙壁碰撞
-        if (otherCollider instanceof BoxCollider2D && selfCollider instanceof BoxCollider2D && ['LeftWall', 'TopWall', 'RightWall'].includes(otherCollider.node.name) && selfCollider.node.name === 'Player') {
+        else if (otherCollider instanceof BoxCollider2D && selfCollider instanceof BoxCollider2D && ['LeftWall', 'TopWall', 'RightWall'].includes(otherCollider.node.name) && selfCollider.node.name === 'Player') {
             director.emit('contact-wall', otherCollider.node.name);
         }
         // 球和砖块碰撞
-        if (blockType.includes(selfCollider.name) && otherCollider instanceof CircleCollider2D) {
+        else if (blockType.includes(selfCollider.name) && otherCollider instanceof CircleCollider2D && otherCollider.node.name === 'MainBall') {
             director.emit('ball-block-contacting', {
                 blockPos: {
                     x: selfCollider.node.x,
@@ -59,7 +59,7 @@ export class GameController extends Component {
             });
         }
         // 球和玩家碰撞
-        if (otherCollider instanceof CircleCollider2D && selfCollider instanceof BoxCollider2D && otherCollider.node.name === 'MainBall' && selfCollider.node.name === 'Player') {
+        else if (otherCollider instanceof CircleCollider2D && selfCollider instanceof BoxCollider2D && otherCollider.node.name === 'MainBall' && selfCollider.node.name === 'Player') {
             director.emit('ball-player-contacting', {
                 name: otherCollider.node.name,
                 ballPos: otherCollider.node.position,

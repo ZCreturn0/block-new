@@ -97,6 +97,10 @@ export interface SIZE {
     w: number;
     h: number;
 };
+export interface POS {
+    x: number;
+    y: number;
+};
 export interface BLOCK_NODE {
     hp: number;
     type: BLOCK_TYPE;
