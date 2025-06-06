@@ -44,7 +44,7 @@ export class BlockCtroller extends Component {
     };
 
     // 地图
-    public map: Array<Array<number>> = [
+    public static map: Array<Array<number>> = [
         [BLOCK.NORMAL, BLOCK.EMPTY, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.EMPTY, BLOCK.EMPTY],
         [BLOCK.GOLD, BLOCK.GOLD, BLOCK.GOLD, BLOCK.GOLD, BLOCK.GOLD, BLOCK.GOLD, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND],
         [BLOCK.EMPTY, BLOCK.EMPTY, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.EMPTY, BLOCK.EMPTY, BLOCK.EMPTY, BLOCK.EMPTY, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.EMPTY, BLOCK.NORMAL],
@@ -108,7 +108,7 @@ export class BlockCtroller extends Component {
         const yMin = 0;
         const xMax = width;
         const yMax = height;
-        this.map.forEach((item, y) => {
+        BlockCtroller.map.forEach((item, y) => {
             const line: Array<BLOCK_NODE> = [];
             item.forEach((_item, x) => {
                 const block = this.getBlockByType(_item);
@@ -134,14 +134,14 @@ export class BlockCtroller extends Component {
     }
 
     // 通过x,y坐标获取砖块在mapNodes下的索引
-    getPosByXy(x: number, y: number) {
+    getPosByNode(target: Node) {
         const pos = {
             x: 0,
             y: 0
         };
         this.mapNodes.forEach((item, _i) => {
             item.forEach((_item, _j) => {
-                if (_item.node && _item.node.x === x && _item.node.y === y) {
+                if (_item.node && _item.node.uuid === target.uuid) {
                     pos.x = _i;
                     pos.y = _j;
                 }
@@ -164,8 +164,8 @@ export class BlockCtroller extends Component {
     }
 
     onBallDamage(e) {
-        const { blockPos, ball } = e;
-        const pos = this.getPosByXy(blockPos.x, blockPos.y);
+        const { node, ball } = e;
+        const pos = this.getPosByNode(node);
         const target = this.mapNodes[pos.x][pos.y];
         /**
          * 防重复碰撞，短时间内与上一次碰撞在同一行或同一列则视为无效
@@ -181,7 +181,7 @@ export class BlockCtroller extends Component {
                 this.node.removeChild(target.node);
                 target.node.destroy();
                 this.mapNodes[pos.x][pos.y].node = null;
-                this.map[pos.x][pos.y] = BLOCK.EMPTY;
+                BlockCtroller.map[pos.x][pos.y] = BLOCK.EMPTY;
                 this.lastContactingPos.x = pos.x;
                 this.lastContactingPos.y = pos.y;
                 this.setSchedule();

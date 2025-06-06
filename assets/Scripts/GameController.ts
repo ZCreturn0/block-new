@@ -47,14 +47,7 @@ export class GameController extends Component {
         // 球和砖块碰撞
         else if (blockType.includes(selfCollider.name) && otherCollider instanceof CircleCollider2D && otherCollider.node.name === 'MainBall') {
             director.emit('ball-block-contacting', {
-                blockPos: {
-                    x: selfCollider.node.x,
-                    y: selfCollider.node.y
-                },
-                blockSize: {
-                    w: (selfCollider.node as any).width * selfCollider.node.scale.x,
-                    h: (selfCollider.node as any).height * selfCollider.node.scale.y,
-                },
+                node: selfCollider.node,
                 ballName: otherCollider.node.name
             });
         }

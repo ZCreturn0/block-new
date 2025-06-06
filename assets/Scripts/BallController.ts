@@ -30,11 +30,6 @@ export class BallController extends Component {
     private increaseAngle: number = 20;
     // 固定反射最小角度
     private minReflectAngle: number = 10;
-    // 存储上一次碰撞的坐标
-    private lastContactingPos: POS = {
-        x: -1,
-        y: -1
-    };
     // BlockCtroller对象
     private blockCtroller: BlockCtroller = null;
 
@@ -193,43 +188,39 @@ export class BallController extends Component {
         }
     }
 
-    setSchedule() {
-        this.scheduleOnce(this.setLastContactingPos, 0.1);
-    }
-
-    cancelSchedule() {
-        this.unschedule(this.setLastContactingPos);
-    }
-
-    setLastContactingPos() {
-        this.lastContactingPos.x = -1;
-        this.lastContactingPos.y = -1;
-    }
-
     onBallBlockContacting(e) {
-        const { blockPos, ballName, blockSize } = e;
+        const { node, ballName } = e;
+        const blockSize = {
+            w: node.width * node.scale.x,
+            h: node.height * node.scale.y,
+        };
+        const blockPos = {
+            x: node.x,
+            y: node.y,
+            xMin: 0,
+            xMax: 0,
+            yMin: 0,
+            yMax: 0
+        };
+
         blockPos.xMin = blockPos.x - blockSize.w / 2;
         blockPos.xMax = blockPos.x + blockSize.w / 2;
         blockPos.yMin = blockPos.y - blockSize.h / 2;
         blockPos.yMax = blockPos.y + blockSize.h / 2;
-        const pos: POS = this.blockCtroller.getPosByXy(blockPos.x, blockPos.y);
-        if (pos.x === this.lastContactingPos.x || pos.y === this.lastContactingPos.y) {
+        const pos: POS = this.blockCtroller.getPosByNode(node);
+        const { lastContactingPos } = this.blockCtroller;
+        if (pos.x === lastContactingPos.x || pos.y === lastContactingPos.y) {
             return;
         }
         const target = this.balls.find((item) => item.node.name = ballName);
         // debug
-        // target.speed = 0;
+        target.speed = 0;
         if (target) {
-            this.cancelSchedule();
             // 修改角度
-            // 球半径
-            const radius = (target.node as any).width / 2;
-            // 半径投影长度
-            const radiusCos = Math.abs(Math.cos(45) * radius);
             log(target.direction);
             // 正上
             if (target.direction === 90) {
-                if (this.blockCtroller.map[pos.x - 1] && this.blockCtroller.map[pos.x - 1][pos.y]) {
+                if (BlockCtroller.map[pos.x - 1] && BlockCtroller.map[pos.x - 1][pos.y]) {
                     return;
                 }
                 if (target.node.x < blockPos.x) {
@@ -238,7 +229,7 @@ export class BallController extends Component {
             }
             // 正右
             else if (target.direction === 0) {
-                if (this.blockCtroller.map[pos.x][pos.y + 1]) {
+                if (BlockCtroller.map[pos.x][pos.y + 1]) {
                     return;
                 }
                 if (target.node.y < blockPos.y) {
@@ -247,7 +238,7 @@ export class BallController extends Component {
             }
             // 正下
             else if (target.direction === 270) {
-                if (this.blockCtroller.map[pos.x + 1] && this.blockCtroller.map[pos.x + 1][pos.y]) {
+                if (BlockCtroller.map[pos.x + 1] && BlockCtroller.map[pos.x + 1][pos.y]) {
                     return;
                 }
                 if (target.node.x > blockPos.x) {
@@ -256,7 +247,7 @@ export class BallController extends Component {
             }
             // 正左
             else if (target.direction === 180) {
-                if (this.blockCtroller.map[pos.x][pos.y - 1]) {
+                if (BlockCtroller.map[pos.x][pos.y - 1]) {
                     return;
                 }
                 if (target.node.y > blockPos.y) {
@@ -266,103 +257,149 @@ export class BallController extends Component {
             // 往右上运动
             else if (target.direction > 0 && target.direction < 90) {
                 // 判断下左面
-                // 左侧
-                if (target.node.x + radiusCos <= blockPos.xMin || 
-                    (
-                        target.node.x <= blockPos.xMin &&
-                        (target.node.y - blockPos.yMax < radiusCos || blockPos.yMin - target.node.y < radiusCos)
-                    )) {
-                    if (this.blockCtroller.map[pos.x][pos.y - 1]) {
+                // 夹角
+                if (target.node.x < blockPos.xMin && target.node.y < blockPos.yMin) {
+                    const xDiff = Math.abs(blockPos.xMin - target.node.x);
+                    const yDiff = Math.abs(blockPos.yMin - target.node.y);
+                    if (xDiff > yDiff) {
+                        if (BlockCtroller.map[pos.x][pos.y - 1]) {
+                            return;
+                        }
+                        target.direction = 90 - target.direction + 90;
+                    } else {
+                        if (BlockCtroller.map[pos.x + 1] && BlockCtroller.map[pos.x + 1][pos.y]) {
+                            return;
+                        }
+                        target.direction = 360 - target.direction;
+                    }
+                }
+                // 左
+                else if (target.node.x <= blockPos.xMin && target.node.y >= blockPos.yMin) {
+                    if (BlockCtroller.map[pos.x][pos.y - 1]) {
                         return;
                     }
-                    log('1 left');
                     target.direction = 90 - target.direction + 90;
-                } else {
-                    if (this.blockCtroller.map[pos.x + 1] && this.blockCtroller.map[pos.x + 1][pos.y]) {
+                }
+                // 下
+                else if (target.node.x > blockPos.xMin && target.node.y < blockPos.yMin) {
+                    if (BlockCtroller.map[pos.x + 1] && BlockCtroller.map[pos.x + 1][pos.y]) {
                         return;
                     }
-                    log('1 down');
                     target.direction = 360 - target.direction;
                 }
             }
             // 左上
             else if (target.direction > 90 && target.direction < 180) {
                 // 判断下右面
-                // 右侧
-                if (target.node.x + radiusCos >= blockPos.xMax || 
-                    (
-                        target.node.x >= blockPos.xMax &&
-                        (target.node.y - blockPos.yMax < radiusCos || blockPos.yMin - target.node.y < radiusCos)
-                    )) {
-                    if (this.blockCtroller.map[pos.x][pos.y + 1]) {
+                // 夹角
+                if (target.node.x > blockPos.xMax && target.node.y < blockPos.yMin) {
+                    const xDiff = Math.abs(target.node.x - blockPos.xMax);
+                    const yDiff = Math.abs(target.node.y - blockPos.yMin);
+                    if (xDiff > yDiff) {
+                        if (BlockCtroller.map[pos.x][pos.y + 1]) {
+                            return;
+                        }
+                        target.direction = 90 - target.direction + 90;
+                    } else {
+                        if (BlockCtroller.map[pos.x + 1] && BlockCtroller.map[pos.x + 1][pos.y]) {
+                            return;
+                        }
+                        target.direction = 180 - target.direction + 180;
+                    }
+                }
+                // 右
+                else if (target.node.x >= blockPos.xMax && target.node.y >= blockPos.yMin) {
+                    if (BlockCtroller.map[pos.x][pos.y + 1]) {
                         return;
                     }
-                    log('2 right');
                     target.direction = 90 - target.direction + 90;
-                } else {
-                    if (this.blockCtroller.map[pos.x + 1] && this.blockCtroller.map[pos.x + 1][pos.y]) {
+                } 
+                // 下
+                else if (target.node.x < blockPos.xMax && target.node.y < blockPos.yMin) {
+                    if (BlockCtroller.map[pos.x + 1] && BlockCtroller.map[pos.x + 1][pos.y]) {
                         return;
                     }
-                    log('2 down');
                     target.direction = 180 - target.direction + 180;
                 }
             }
             // 左下
             else if (target.direction > 180 && target.direction < 270) {
                 // 判断上右面
-                // 右侧
-                if (target.node.x + radiusCos >= blockPos.xMax || 
-                    (
-                        target.node.x >= blockPos.xMax &&
-                        (target.node.y - blockPos.yMax < radiusCos || blockPos.yMin - target.node.y < radiusCos)
-                    )) {
-                    if (this.blockCtroller.map[pos.x][pos.y + 1]) {
+                // 夹角
+                if (target.node.x > blockPos.xMax && target.node.y > blockPos.yMax) {
+                    const xDiff = Math.abs(target.node.x - blockPos.xMax);
+                    const yDiff = Math.abs(target.node.y - blockPos.yMax);
+                    if (xDiff > yDiff) {
+                        if (BlockCtroller.map[pos.x][pos.y + 1]) {
+                            return;
+                        }
+                        target.direction = (180 - target.direction + 360) % 360;
+                    } else {
+                        if (BlockCtroller.map[pos.x - 1] && BlockCtroller.map[pos.x - 1][pos.y]) {
+                            return;
+                        }
+                        target.direction = 360 - target.direction;
+                    }
+                }
+                // 右
+                else if (target.node.x >= blockPos.xMax && target.node.y <= blockPos.yMax) {
+                    if (BlockCtroller.map[pos.x][pos.y + 1]) {
                         return;
                     }
-                    log('3 right');
                     target.direction = (180 - target.direction + 360) % 360;
-                } else {
-                    if (this.blockCtroller.map[pos.x - 1] && this.blockCtroller.map[pos.x - 1][pos.y]) {
+                } 
+                // 上
+                else if (target.node.x < blockPos.xMax && target.node.y > blockPos.yMax) {
+                    if (BlockCtroller.map[pos.x - 1] && BlockCtroller.map[pos.x - 1][pos.y]) {
                         return;
                     }
-                    log('3 top');
                     target.direction = 360 - target.direction;
                 }
             }
             // 右下
             else if (target.direction > 270 && target.direction < 360) {
                 // 判断左上面
-                // 左侧
-                if (target.node.x + radiusCos <= blockPos.xMin || 
-                    (
-                        target.node.x <= blockPos.xMin &&
-                        (target.node.y - blockPos.yMax < radiusCos || blockPos.yMin - target.node.y < radiusCos)
-                    )) {
-                    if (this.blockCtroller.map[pos.x][pos.y - 1]) {
+                // 夹角
+                if (target.node.x < blockPos.xMin && target.node.y > blockPos.yMax) {
+                    const xDiff = Math.abs(blockPos.xMin - target.node.x);
+                    const yDiff = Math.abs(target.node.y - blockPos.yMax);
+                    if (xDiff > yDiff) {
+                        if (BlockCtroller.map[pos.x][pos.y - 1]) {
+                            return;
+                        }
+                        target.direction = 180 + (360 - target.direction);
+                    } else {
+                        if (BlockCtroller.map[pos.x - 1] && BlockCtroller.map[pos.x - 1][pos.y]) {
+                            return;
+                        }
+                        target.direction = 360 - target.direction;
+                    }
+                }
+                // 左
+                else if (target.node.x <= blockPos.xMin && target.node.y <= blockPos.yMax) {
+                    if (BlockCtroller.map[pos.x][pos.y - 1]) {
                         return;
                     }
-                    log('4 left');
                     target.direction = 180 + (360 - target.direction);
-                } else {
-                    if (this.blockCtroller.map[pos.x - 1] && this.blockCtroller.map[pos.x - 1][pos.y]) {
+                }
+                // 上
+                else if (target.node.x > blockPos.xMin && target.node.y > blockPos.yMax) {
+                    if (BlockCtroller.map[pos.x - 1] && BlockCtroller.map[pos.x - 1][pos.y]) {
                         return;
                     }
-                    log('4 top');
                     target.direction = 360 - target.direction;
                 }
             }
-            this.lastContactingPos.x = pos.x;
-            this.lastContactingPos.y = pos.y;
-            this.setSchedule();
             // 事件通知
             director.emit('ball-damage', {
-                blockPos,
+                node,
                 ball: {
                     attack: target.attack,
                     type: target.type
                 }
             });
         }
+        log(JSON.parse(JSON.stringify(BlockCtroller.map)));
     }
 
     // 画瞄准线
@@ -469,7 +506,6 @@ export class BallController extends Component {
                 const radian = ball.direction * (Math.PI / 180);
                 const dx = ball.speed * Math.cos(radian) * deltaTime;
                 const dy = ball.speed * Math.sin(radian) * deltaTime;
-
                 // 更新球的节点位置
                 ball.node.setPosition(ball.node.position.x + dx, ball.node.position.y + dy);
             }
