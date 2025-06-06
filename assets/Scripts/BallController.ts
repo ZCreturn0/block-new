@@ -1,7 +1,7 @@
 import { _decorator, Component, Node, director, Vec3, Graphics, log } from 'cc';
 const { ccclass, property } = _decorator;
 
-import type { Ball, PLAYER_MOVE_TYPE, PLAYER_DIRECTION_KEY, POS } from './Type';
+import type { Ball, PLAYER_MOVE_TYPE, PLAYER_DIRECTION_KEY, POS, SIZE } from './Type';
 import { BALL, DIRECTION_KEY, TAG, DIRECTION_TYPE } from './Type';
 import { BlockCtroller } from './BlockCtroller';
 
@@ -190,7 +190,7 @@ export class BallController extends Component {
 
     onBallBlockContacting(e) {
         const { node, ballName } = e;
-        const blockSize = {
+        const blockSize: SIZE = {
             w: node.width * node.scale.x,
             h: node.height * node.scale.y,
         };
