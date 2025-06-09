@@ -1,10 +1,13 @@
 import { _decorator, Component, Node, Prefab, instantiate, Vec3, director } from 'cc';
-const { ccclass, property } = _decorator;
+const { ccclass, property, executionOrder } = _decorator;
 
 import type { SIZE, BLOCK_NODE, BLOCK_TYPE, BALL_TYPE, POS } from './Type';
 import { BLOCK, BALL } from './Type';
 
+import { map1, map2 } from './Map';
+
 @ccclass('BlockCtroller')
+@executionOrder(-1)
 export class BlockCtroller extends Component {
 
     // 普通砖
@@ -44,24 +47,27 @@ export class BlockCtroller extends Component {
     };
 
     // 地图
-    public static map: Array<Array<number>> = [
-        [BLOCK.NORMAL, BLOCK.EMPTY, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.EMPTY, BLOCK.EMPTY],
-        [BLOCK.GOLD, BLOCK.GOLD, BLOCK.GOLD, BLOCK.GOLD, BLOCK.GOLD, BLOCK.GOLD, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND, BLOCK.DIAMOND],
-        [BLOCK.EMPTY, BLOCK.EMPTY, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.EMPTY, BLOCK.EMPTY, BLOCK.EMPTY, BLOCK.EMPTY, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.EMPTY, BLOCK.NORMAL],
-        [BLOCK.EMPTY, BLOCK.EMPTY, BLOCK.NORMAL, BLOCK.GRASS, BLOCK.GRASS, BLOCK.GRASS, BLOCK.GRASS, BLOCK.NORMAL, BLOCK.EMPTY, BLOCK.EMPTY],
-        [BLOCK.EMPTY, BLOCK.EMPTY, BLOCK.NORMAL, BLOCK.GRASS, BLOCK.WOOD, BLOCK.WOOD, BLOCK.GRASS, BLOCK.NORMAL, BLOCK.EMPTY, BLOCK.EMPTY],
-        [BLOCK.EMPTY, BLOCK.EMPTY, BLOCK.NORMAL, BLOCK.GRASS, BLOCK.GRASS, BLOCK.GRASS, BLOCK.GRASS, BLOCK.NORMAL, BLOCK.EMPTY, BLOCK.EMPTY],
-        [BLOCK.EMPTY, BLOCK.EMPTY, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.EMPTY, BLOCK.EMPTY],
-        [],
-        [BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL, BLOCK.NORMAL]
-    ];
+    public static map: Array<Array<number>> = [];
 
     // 存储地图对应的节点
     private mapNodes: Array<Array<BLOCK_NODE>> = [];
 
     start() {
-        this.renderMap();
         director.on('ball-damage', this.onBallDamage.bind(this));
+        director.on('load-level', this.onLoadLevel.bind(this));
+    }
+
+    onLoadLevel(level: number) {
+        this.mapNodes = [];
+        switch (level) {
+            case 1:
+                BlockCtroller.map = map1;
+                break;
+            case 2:
+                BlockCtroller.map = map2;
+                break;
+        }
+        this.renderMap();
     }
 
     getBlockByType(type: BLOCK_TYPE) {
@@ -102,6 +108,18 @@ export class BlockCtroller extends Component {
         }
     }
 
+    getBlockNumber() {
+        let count = 0;
+        BlockCtroller.map.forEach((item) => {
+            item.forEach((_item) => {
+                if (_item) {
+                    count++;
+                }
+            })
+        });
+        return count;
+    }
+
     renderMap() {
         const {width, height} = (this.node as any);
         const xMin = 0;
@@ -127,6 +145,12 @@ export class BlockCtroller extends Component {
                         type: _item,
                         node: blockIns
                     });
+                } else {
+                    line.push({
+                        hp: 0,
+                        type: _item,
+                        node: null
+                    });
                 }
             });
             this.mapNodes.push(line);
@@ -134,7 +158,7 @@ export class BlockCtroller extends Component {
     }
 
     // 通过x,y坐标获取砖块在mapNodes下的索引
-    getPosByNode(target: Node) {
+    getPosByNode(target: Node): POS {
         const pos = {
             x: 0,
             y: 0
@@ -165,8 +189,8 @@ export class BlockCtroller extends Component {
 
     onBallDamage(e) {
         const { node, ball } = e;
-        const pos = this.getPosByNode(node);
-        const target = this.mapNodes[pos.x][pos.y];
+        const pos: POS = this.getPosByNode(node);
+        const target: BLOCK_NODE = this.mapNodes[pos.x][pos.y];
         /**
          * 防重复碰撞，短时间内与上一次碰撞在同一行或同一列则视为无效
          */
@@ -185,6 +209,9 @@ export class BlockCtroller extends Component {
                 this.lastContactingPos.x = pos.x;
                 this.lastContactingPos.y = pos.y;
                 this.setSchedule();
+            }
+            if (!this.getBlockNumber()) {
+                director.emit('level-clear');
             }
         }
     }

@@ -14,3 +14,7 @@ ball-block-contacting: 球和砖块碰撞
 
 砖块事件：
 ball-damage: 球造成伤害
+
+关卡事件：
+load-level: 加载关卡
+level-clear: 当前关已清除

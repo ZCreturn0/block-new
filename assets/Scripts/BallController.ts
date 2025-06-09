@@ -50,10 +50,25 @@ export class BallController extends Component {
         director.on('ball-wall-contacting', this.onBallWallContacting.bind(this));
         director.on('ball-player-contacting', this.onBallPlayerContacting.bind(this));
         director.on('ball-block-contacting', this.onBallBlockContacting.bind(this));
+        director.on('load-level', this.onLoadLevel.bind(this));
 
         // debug
         director.on('speed-up', this.onSpeedUp.bind(this));
         director.on('speed-down', this.onSpeedDown.bind(this));
+    }
+
+    onLoadLevel() {
+        this.balls = [{
+            onShoot: false,
+            speed: 0,
+            attack: 1,
+            type: BALL.NORMAL,
+            // 0 - 360度
+            direction: 91,
+            node: this.node.getChildByName('MainBall')
+        }];
+        this.balls[0].node.setPosition(600, 112, 0);
+        this.blockCtroller = this.getComponent(BlockCtroller);
     }
 
     onSpeedUp() {
@@ -213,11 +228,9 @@ export class BallController extends Component {
             return;
         }
         const target = this.balls.find((item) => item.node.name = ballName);
-        // debug
-        target.speed = 0;
         if (target) {
             // 修改角度
-            log(target.direction);
+            // log(target.direction);
             // 正上
             if (target.direction === 90) {
                 if (BlockCtroller.map[pos.x - 1] && BlockCtroller.map[pos.x - 1][pos.y]) {
@@ -399,7 +412,6 @@ export class BallController extends Component {
                 }
             });
         }
-        log(JSON.parse(JSON.stringify(BlockCtroller.map)));
     }
 
     // 画瞄准线

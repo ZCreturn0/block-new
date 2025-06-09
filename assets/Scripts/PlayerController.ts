@@ -30,7 +30,16 @@ export class PlayerController extends Component {
         director.on('leave-wall', () => {
             this.cantactingWall = null;
         });
+        director.on('load-level', this.onLoadLevel.bind(this));
         this.curPos = this.node.position;
+    }
+
+    onLoadLevel() {
+        this.direction = 0;
+        this.speed = 0;
+        this.curPos = new Vec3(600, 100, 0);
+        this.node.setPosition(this.curPos);
+        this.cantactingWall = null;
     }
 
     move() {

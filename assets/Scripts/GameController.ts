@@ -20,6 +20,14 @@ export class GameController extends Component {
     private leftWall: Node | null = null;
     // 右墙
     private rightWall: Node | null = null;
+    // 当前关
+    private level: number = 1;
+    // 关卡数
+    private levelNum: number = 2;
+
+    protected onLoad(): void {
+        
+    }
 
     start() {
         this.leftWall = this.node.parent.getChildByName('Wall').getChildByName('LeftWall');
@@ -29,6 +37,16 @@ export class GameController extends Component {
         if (PhysicsSystem2D.instance) {
             PhysicsSystem2D.instance.on(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this);
             PhysicsSystem2D.instance.on(Contact2DType.END_CONTACT, this.onEndContact, this);
+        }
+
+        director.emit('load-level', this.level);
+        director.emit('level-clear', this.onLevelClear.bind(this));
+    }
+
+    onLevelClear() {
+        if (this.level < this.levelNum) {
+            this.level++;
+            director.emit('load-level', this.level);
         }
     }
 
