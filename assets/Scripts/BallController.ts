@@ -124,7 +124,7 @@ export class BallController extends Component {
         this.balls.forEach((ball) => {
             if (!ball.onShoot) {
                 ball.onShoot = true;
-                ball.speed = 300;
+                ball.speed = this.initSpeed;
             }
         });
     }
